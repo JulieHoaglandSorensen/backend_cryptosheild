@@ -13,7 +13,7 @@ const axios = require('axios').default;
 
 // middleware to set headers on any request to TI API
 const setAPIKey = (req, res, next) => {
-  res.setHeader('apiKey', 'API_KEY_GOES_HERE');
+  res.setHeader('TI_API_KEY', 'c8c0fd6ddc4f487291887853c5a5dc92');
   next();
 };
 
@@ -22,22 +22,55 @@ const coinListMiddleware = async (req, res, next) => {
   const options = {
     method: 'GET',
     url: 'https://api.tokeninsight.com/api/v1/coins/list',
-    headers: {accept: 'application/json'}
+    headers: {accept: 'application/json', TI_API_KEY: 'c8c0fd6ddc4f487291887853c5a5dc92'},
+    params: {
+      offset: 0,
+      limit: 5
+    }
   };
 
-  try {
-    const response = await axios.get(options.url);
-    console.log('getCoin response: ', response);
-    res.locals = response;
-  } catch (error) {
-    console.error(error);
-  }
+  axios
+    .request(options)
+    .then(function (response) {
+      res.locals = response.data;
+      console.log('res.locals: ', res.locals);
+      return next();
+    })
+    .catch(function (error) {
+      return next({
+        log: 'Express error handler caught error in coinListMiddleware',
+        status: 500,
+        message: { err: 'An error occurred' }
+      })
+    });
+  // const url = 'https://api.tokeninsight.com/api/v1/coins/list';
+  // const options = {
+  //   method: 'GET',
+  //   headers: {accept: 'application/json', TI_API_KEY: 'c8c0fd6ddc4f487291887853c5a5dc92'},
+  //   params: {
+  //     offset: 0,
+  //     limit: 1
+  //   }
+  // };
+
+  // try {
+  //   const response = await axios.get(url, options);
+  //   console.log('getCoin response: ', response);
+  //   res.locals = response;
+  // } catch (error) {
+  //   console.error(error);
+  //   return next({
+  //     log: 'Express error handler caught error in coinListMiddleware',
+  //     status: 500,
+  //     message: { err: 'An error occurred' },
+  //   });
+  // }
     
-  next();
+  // next();
 };
 
-app.get('/coins', setAPIKey, coinListMiddleware, (req, res) => {
-  return res.status(200).json(`SOME RESPONSE FROM EXTERNAL API`);
+app.get('/coins', coinListMiddleware, (req, res) => {
+  return res.status(200).json(res.locals);
 });
 
 // insert middleware into the above that fires a GET request to the Tokeninsight API and returns a JSON response to the client
